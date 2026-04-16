@@ -1,0 +1,19 @@
+\begin{table}[h]
+    \centering
+    \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lcccccc}
+        \toprule
+        Method & Seed 1 & Seed 2 & Seed 3 & Seed 4 & Seed 5 & Mean $\pm$ Std \\
+        \midrule
+        Random & 2.268 & 2.103 & 2.027 & 2.263 & 3.080 & $2.348 \pm 0.377$ \\
+        Curiosity V1 & 7.287 & 7.054 & 7.093 & 7.256 & 6.882 & $7.114 \pm 0.147$ \\
+        Curiosity V2 & 2.546 & 3.128 & 3.204 & 3.422 & 2.393 & $2.939 \pm 0.398$ \\
+        Visitation Count & 5.676 & 5.693 & 4.578 & 5.052 & 6.939 & $5.588 \pm 0.794$ \\
+        Ours (Tabular Critic) & 1.921 & 2.025 & 1.827 & 1.938 & 1.851 & $1.912 \pm 0.070$ \\
+        Ours (Neural Critic Model) & 1.755 & 1.817 & 1.926 & 1.975 & 1.820 & $1.858 \pm 0.080$ \\
+        \textit{Ours Oracle (Ground-Truth Critic)} & \textit{1.624} & \textit{1.733} & \textit{1.816} & \textit{1.753} & \textit{1.757} & \textit{1.736} $\pm$ \textit{0.063} \\
+        \bottomrule
+    \end{tabular*}
+    \vspace{0.5em}
+    \caption{Final mean L2 prediction error on deterministic cells (lower is better). \textit{Italicised rows} denote oracle methods with privileged environment knowledge and are included for reference only.}
+    \label{tab:final_error}
+\end{table}
