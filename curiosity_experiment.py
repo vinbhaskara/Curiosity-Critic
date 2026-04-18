@@ -564,7 +564,7 @@ class CriticNNetModel:
 
     def _build(self) -> None:
         torch.manual_seed(self._torch_seed)
-        self._net  = _WorldModelNet(self._INPUT_DIM, self._hidden, 1)
+        self._net  = _WorldModelNet(self._INPUT_DIM, self._hidden, 1) # repurposing _WorldModelNet class for CriticNNetModel's MLP architecture
         self._loss = nn.MSELoss()
         self._opt  = torch.optim.Adam(self._net.parameters(), lr=self._lr, betas=(0.9, 0.999), eps=1e-8)
 
