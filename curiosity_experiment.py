@@ -6,10 +6,10 @@ Overview
 --------
 A minimal, reproducible benchmark for comparing curiosity-based intrinsic
 motivation methods in reinforcement learning.  The environment is a 30×30
-grid world containing a small 3×3 deterministic region and a large stochastic
-surround.  The central question is whether a curiosity signal can distinguish
-between these two regimes and focus the agent's exploration on the learnable
-region.
+grid world containing a 15-column deterministic left half and a 15-column 
+stochastic right half.  The central question is whether a curiosity signal 
+can distinguish between these two regimes and focus the agent's exploration 
+on the learnable region.
 
 Environment
 -----------
