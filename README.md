@@ -90,8 +90,8 @@ One gradient update per step, applied before the reward is computed. The smaller
 | Key | Display Name | Intrinsic Reward |
 |---|---|---|
 | `random` | Random | Uniform random actions — unguided baseline |
-| `curiosity_v1` | Curiosity V1 | `error_before` — raw L2 prediction error (Pathak et al., 2017) |
-| `curiosity_v2` | Curiosity V2 | `error_before − error_after` — learning progress |
+| `curiosity_v1` | Curiosity V1 | `error_before` — raw L2 prediction error (Schmidhuber, Feb 1991) |
+| `curiosity_v2` | Curiosity V2 | `error_before − error_after` — change in prediction error (Schmidhuber, Nov 1991) |
 | `visitation_count` | Visitation Count | `1 / sqrt(N(s))` — count-based bonus (Strehl & Littman, 2008) |
 | `curiosity_critic_ours_tabular_critic` | Ours (Tabular Critic) | `error_before − EMA-mean(error_after)` per state, decay=0.9 |
 | `curiosity_critic_ours_nnet` | Ours (Neural Critic Model) | `error_before − CriticNNetModel.predict(state)` |
