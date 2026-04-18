@@ -76,9 +76,9 @@ the raw logit prediction and the true binary observation.
 Methods
 -------
 random                  Uniform random action selection (unguided baseline).
-curiosity_v1            Curiosity V1 [Pathak et al., 2017]: intrinsic reward equals the
+curiosity_v1            Curiosity V1 [Schmidhuber, Feb 1991]: intrinsic reward equals the
                         L2 prediction error of the world model before the gradient update.
-curiosity_v2            Curiosity V2: intrinsic reward equals the reduction in prediction
+curiosity_v2            Curiosity V2 [Schmidhuber, Nov 1991]: intrinsic reward equals the reduction in prediction
                         error produced by one gradient update (learning progress signal).
 curiosity_critic_ours_tabular_critic   Ours (Tabular Critic): intrinsic reward equals the world-model
                         prediction error minus a per-state EMA-mean tabular baseline
