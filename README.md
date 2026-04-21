@@ -6,16 +6,25 @@
 Abstract:
 > Local prediction-error-based curiosity rewards focus on the current transition without considering the world model's cumulative prediction error across all visited transitions. We introduce Curiosity-Critic, which grounds its intrinsic reward in the improvement of this cumulative objective, and show that it reduces to a tractable per-step form: the difference between the current prediction error and the asymptotic error baseline of the current state transition. We estimate this baseline online with a learned critic co-trained alongside the world model; regressing a single scalar, the critic converges well before the world model saturates, redirecting exploration toward learnable transitions without oracle knowledge of the noise floor. The reward is higher for learnable transitions and collapses toward the baseline for stochastic ones, effectively separating epistemic (reducible) from aleatoric (irreducible) prediction error online. Prior prediction-error curiosity formulations, from Schmidhuber (1991) to learned-feature-space variants, emerge as special cases corresponding to specific approximations of this baseline. Experiments on a stochastic grid world show that Curiosity-Critic outperforms prediction-error and visitation-count baselines in convergence speed and final world model accuracy.
 
+Correspondence: [vin.bhaskara@gmail.com](mailto:vin.bhaskara@gmail.com)
+
 ### 1. Reproduce Experiments
 ---
 
-
+**Run Script**:  
 ```bash
 pip install -r requirements.txt
 chmod +x run.sh && ./run.sh
 ```
 
-**Demo animation**: [YouTube](https://youtu.be/Jv1n346TWbQ)
+**Live animation**: [YouTube](https://youtu.be/Jv1n346TWbQ)
+
+<figure>
+  <img src="./results/snapshots/frame_step0030000.png" alt="Agent trajectories at step 30,000 on a stochastic grid world." style="max-width: 800px; width: 100%; display: block; margin: 0 auto;">
+  <figcaption>
+    <span class="caption">Five methods explore a 30x30 grid world at step 30,000. The left half (green) is learnable; the right half (grey) is pure noise.</span>
+  </figcaption>
+</figure>
 
 ### 2. Experiment Details
 ---
