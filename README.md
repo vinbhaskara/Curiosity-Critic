@@ -1,7 +1,7 @@
 ## Curiosity-Critic: Cumulative Prediction Error Improvement as a Tractable Intrinsic Reward for World Model Training
 
 *Vin Bhaskara and Haicheng Wang, University of Toronto, 2026.*  
-\{bhaskara,hcwang\}@cs.toronto.edu
+\{bhaskara,hcwang\}@cs.toronto.edu  
 Paper: [arxiv.org/abs/2604.18701](https://arxiv.org/abs/2604.18701)
 
 Abstract:
