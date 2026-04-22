@@ -155,5 +155,23 @@ Under `results/` folder.
 | `heatmap_windows.png` | Heatmaps at early / mid / late training windows |
 
 
+### 7. Cite
+---  
+
+Cite as:  
+```
+@misc{bhaskara2026curiositycriticcumulativepredictionerror,
+      title={Curiosity-Critic: Cumulative Prediction Error Improvement as a Tractable Intrinsic Reward for World Model Training}, 
+      author={Vin Bhaskara and Haicheng Wang},
+      year={2026},
+      eprint={2604.18701},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG},
+      url={https://arxiv.org/abs/2604.18701}, 
+}
+```
+
+
+
 
 
