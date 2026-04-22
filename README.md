@@ -19,7 +19,7 @@ pip install -r requirements.txt
 chmod +x run.sh && ./run.sh
 ```
 
-**Live animation**: [YouTube](https://youtu.be/Jv1n346TWbQ)
+**Live animation**: [youtu.be/Jv1n346TWbQ](https://youtu.be/Jv1n346TWbQ)
 
 <figure>
   <img src="./results/snapshots/frame_step0030000.png" alt="Agent trajectories at step 30,000 on a stochastic grid world." style="max-width: 800px; width: 100%; display: block; margin: 0 auto;">
