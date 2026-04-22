@@ -24,7 +24,7 @@ chmod +x run.sh && ./run.sh
 <figure>
   <img src="./results/snapshots/frame_step0030000.png" alt="Agent trajectories at step 30,000 on a stochastic grid world." style="max-width: 800px; width: 100%; display: block; margin: 0 auto;">
   <figcaption>
-    <span class="caption">Five methods explore a 30x30 grid world. The left half (green) is learnable; the right half (grey) is pure noise.</span>
+    <span class="caption">Seven methods explore a 30x30 grid world. The left half (green) is learnable; the right half (grey) is pure noise.</span>
   </figcaption>
 </figure>
 
