@@ -7,7 +7,7 @@ Paper: [arxiv.org/abs/2604.18701](https://arxiv.org/abs/2604.18701)
 Blog: [vinbhaskara.github.io/posts/2026/04/curiosity-critic/](https://vinbhaskara.github.io/posts/2026/04/curiosity-critic/)
 
 Abstract:
-> Local prediction-error-based curiosity rewards focus on the current transition without considering the world model's cumulative prediction error across all visited transitions. We introduce Curiosity-Critic, which grounds its intrinsic reward in the improvement of this cumulative objective, and show that it reduces to a tractable per-step form: the difference between the current prediction error and the asymptotic error baseline of the current state transition. We estimate this baseline online with a learned critic co-trained alongside the world model; regressing a single scalar, the critic converges well before the world model saturates, redirecting exploration toward learnable transitions without oracle knowledge of the noise floor. The reward is higher for learnable transitions and collapses toward the baseline for stochastic ones, effectively separating epistemic (reducible) from aleatoric (irreducible) prediction error online. Prior prediction-error curiosity formulations, from Schmidhuber (1991) to learned-feature-space variants, emerge as special cases corresponding to specific approximations of this baseline. Experiments on a stochastic grid world show that Curiosity-Critic outperforms prediction-error and visitation-count baselines in convergence speed and final world model accuracy.
+> Local prediction-error-based curiosity rewards focus on the current transition without considering the world model's cumulative prediction error across all visited transitions. We introduce Curiosity-Critic, which grounds its intrinsic reward in the improvement of this cumulative objective, and show that it admits a tractable per-step surrogate: the difference between the current prediction error and the asymptotic error baseline of the current state transition. We estimate this error baseline online with a learned critic co-trained alongside the world model; regressing a single scalar, the critic converges well before the world model saturates, redirecting exploration toward learnable transitions without oracle knowledge of the noise floor. The reward is higher for learnable transitions and collapses toward the error baseline for stochastic ones, effectively separating epistemic (reducible) from aleatoric (irreducible) prediction error online. Prior prediction-error curiosity formulations, from Schmidhuber (1991) to learned-feature-space variants, emerge as special cases corresponding to specific approximations of this error baseline. Experiments on a stochastic grid world show that Curiosity-Critic outperforms prediction-error, visitation-count, and Random Network Distillation methods in training speed and final world model accuracy.
 
 Correspondence: [vin.bhaskara@gmail.com](mailto:vin.bhaskara@gmail.com)
 
@@ -20,12 +20,12 @@ pip install -r requirements.txt
 chmod +x run.sh && ./run.sh
 ```
 
-**Live animation**: [youtu.be/Jv1n346TWbQ](https://youtu.be/Jv1n346TWbQ)
+**Live animation**: [youtu.be/hHSvQGaO5yY](https://youtu.be/hHSvQGaO5yY)
 
 <figure>
   <img src="./results/snapshots/frame_step0030000.png" alt="Agent trajectories at step 30,000 on a stochastic grid world." style="max-width: 800px; width: 100%; display: block; margin: 0 auto;">
   <figcaption>
-    <span class="caption">Seven methods explore a 30x30 grid world. The left half (green) is learnable; the right half (grey) is pure noise.</span>
+    <span class="caption">Nine methods explore a 30x30 grid world. The left half (green) is learnable; the right half (grey) is pure noise.</span>
   </figcaption>
 </figure>
 
@@ -61,7 +61,7 @@ A **30 × 30 grid world** with a hard left/right split:
 | Actions | Up / Down / Left / Right (hard walls, no wrap) |
 | Transitions | Fully deterministic |
 
-**Deterministic cells** share a fixed binary pattern derived from cyclic shifts of a base random vector (seeded by `GRID_SEED = 28081994`). Adjacent cells have correlated patterns, enabling the world model to generalise across nearby cells. Prediction error is reducible to zero.
+**Deterministic cells** share a fixed binary pattern derived from cyclic shifts of a base random vector. Adjacent cells have correlated patterns, enabling the world model to generalise across nearby cells. Prediction error is reducible to zero.
 
 **Stochastic cells** re-sample an i.i.d. Bernoulli(0.5) vector on every visit. Prediction error is irreducible — the oracle floor is `sqrt(200) × 0.5 ≈ 7.07`.
 
@@ -105,9 +105,15 @@ One gradient update per step, applied before the reward is computed. The smaller
 | `curiosity_v1` | Curiosity V1 | `error_before` — raw L2 prediction error (Schmidhuber, Feb 1991) |
 | `curiosity_v2` | Curiosity V2 | `error_before − error_after` — change in prediction error (Schmidhuber, Nov 1991) |
 | `visitation_count` | Visitation Count | `1 / sqrt(N(s))` — count-based bonus (Strehl & Littman, 2008) |
+| `rnd_state` | RND (State) | Random Network Distillation on `[one-hot(row) \| one-hot(col)]` — learned spatial novelty / soft-count control |
+| `rnd_observation` | RND (Observation) | Random Network Distillation on the 200-dim TV-pixel observation — citation-faithful RND baseline for noisy observations |
 | `curiosity_critic_ours_tabular_critic` | Ours (Tabular Critic) | `error_before − EMA-mean(error_after)` per state, decay=0.9 |
 | `curiosity_critic_ours_nnet` | Ours (Neural Critic Model) | `error_before − CriticNNetModel.predict(state)` |
 | `curiosity_critic_ours_ideal` | Ours Oracle (Ground-Truth Critic) | `error_before − irreducible_error(state)` — oracle upper bound |
+
+**Random Network Distillation (RND) baselines** (`rnd_state`, `rnd_observation`): both use a fixed random target MLP and a trainable predictor MLP.
+
+`rnd_observation` is the faithful analogue of Random Network Distillation in this stochastic-observation benchmark: stochastic cells can keep producing novel-looking pixel vectors. `rnd_state` is included as a diagnostic control showing what happens when RND is applied to the deterministic row/column address instead.
 
 **Tabular Critic** (`CriticBaselineEstimation`): 30×30 table of per-state EMA-mean values (decay=0.9) tracking `error_after`. No oracle knowledge required.
 

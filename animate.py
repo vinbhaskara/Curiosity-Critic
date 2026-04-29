@@ -5,10 +5,11 @@ animate.py — Fast trajectory animation for the curiosity experiment.
 Modes:
 
   combined (default)
-    One video total: all methods in a 2×4 grid, all seeds shown simultaneously
+    One video total: all methods in a 3×4 grid, all seeds shown simultaneously
     as differently-coloured blobs within each method panel.
     Row 1: Random | Curiosity V1 | Curiosity V2 | Visitation Count
-    Row 2: Ours (tabular) | Ours (Neural Critic) | Ours Oracle | Legend (cell types + seeds)
+    Row 2: RND (State) | RND (Observation) | Ours (tabular) | Ours (Neural Critic)
+    Row 3: Ours Oracle | empty | empty | Legend (cell types + seeds)
 
   single
     One video per (method, seed) pair.
@@ -53,10 +54,12 @@ PANEL_LAYOUT = {
     'curiosity_v1':                 (0, 1),
     'curiosity_v2':                 (0, 2),
     'visitation_count':             (0, 3),
-    'curiosity_critic_ours_tabular_critic':        (1, 0),
-    'curiosity_critic_ours_nnet':   (1, 1),   # primary method — green border
-    'curiosity_critic_ours_ideal':  (1, 2),
-    # (1, 3) is the shared legend (single panel width)
+    'rnd_state':                    (1, 0),
+    'rnd_observation':              (1, 1),
+    'curiosity_critic_ours_tabular_critic':        (1, 2),
+    'curiosity_critic_ours_nnet':   (1, 3),   # primary method — green border
+    'curiosity_critic_ours_ideal':  (2, 0),
+    # (2, 3) is the shared legend (single panel width)
 }
 
 METHOD_DISPLAY = {
@@ -64,6 +67,8 @@ METHOD_DISPLAY = {
     'curiosity_v1':                'Curiosity V1',
     'curiosity_v2':                'Curiosity V2',
     'visitation_count':            'Visitation Count',
+    'rnd_state':                   'RND (State)',
+    'rnd_observation':             'RND\n(Observation)',
     'curiosity_critic_ours_tabular_critic':       'Ours (Tabular Critic)',
     'curiosity_critic_ours_nnet':  'Ours (Neural\nCritic Model)',
     'curiosity_critic_ours_ideal': 'Ours Oracle\n(Ground-Truth Critic)',
@@ -92,6 +97,8 @@ PLOT_METHOD_STYLE = {
     'curiosity_v1':                   ('#d62728', '-',   10, 1.8),
     'curiosity_v2':                   ('#ff7f0e', '-',   20, 1.8),
     'visitation_count':               ('#9467bd', '-',   15, 1.8),
+    'rnd_state':                      ('#8c564b', '-',   18, 1.8),
+    'rnd_observation':                ('#e377c2', '-',   19, 1.8),
     'curiosity_critic_ours_tabular_critic': ('#6baed6', '-',  30, 1.8),
     'curiosity_critic_ours_nnet':     ('#1f77b4', '-',   35, 1.8),
     'curiosity_critic_ours_ideal':    ('#2ca02c', ':',   25, 1.8),
@@ -368,9 +375,10 @@ def _build_combined_background(grid: dict, cell_px: int,
     """
     Returns (canvas, title_h, panel_h, panel_w).
 
-    Layout (2 rows × 4 columns):
+    Layout (3 rows × 4 columns):
       Row 0: Random | V1 | V2 | Visitation Count
-      Row 1: Ours (tabular) | Ours (Neural Critic) | Ours Oracle | Legend
+      Row 1: RND (State) | RND (Observation) | Ours (tabular) | Ours (Neural Critic)
+      Row 2: Ours Oracle | empty | empty | Legend
 
     Each method panel is outlined with a border whose color, linestyle, and
     thickness match its entry in PLOT_METHOD_STYLE.
@@ -385,14 +393,16 @@ def _build_combined_background(grid: dict, cell_px: int,
         panels[(pr, pc)] = _build_grid_panel(grid, cell_px, label,
                                               panel_h, panel_w)
 
-    # Legend fits in a single panel width (col 3, row 1)
+    # Legend fits in a single panel width (col 3, row 2)
     legend = _build_legend_panel(panel_h, panel_w, seed_labels)
+    blank = np.full((panel_h, panel_w, 3), _C_BG, dtype=np.uint8)
 
     row0 = np.concatenate([panels[(0, 0)], panels[(0, 1)],
                            panels[(0, 2)], panels[(0, 3)]], axis=1)
     row1 = np.concatenate([panels[(1, 0)], panels[(1, 1)],
-                           panels[(1, 2)], legend], axis=1)
-    canvas = np.concatenate([row0, row1], axis=0)
+                           panels[(1, 2)], panels[(1, 3)]], axis=1)
+    row2 = np.concatenate([panels[(2, 0)], blank, blank, legend], axis=1)
+    canvas = np.concatenate([row0, row1, row2], axis=0)
 
     # Draw per-method borders within the title bar only (rows 0.._TITLE_H per
     # panel). The title bar is padding above the grid, so borders never
@@ -468,6 +478,7 @@ def _prerender_plot_frames(all_error_traces: dict, log_interval: int,
 
     # Display order matches METHODS_TO_PLOT in plot.py
     _ORDER = ['random', 'curiosity_v1', 'curiosity_v2', 'visitation_count',
+              'rnd_state', 'rnd_observation',
               'curiosity_critic_ours_tabular_critic', 'curiosity_critic_ours_nnet',
               'curiosity_critic_ours_ideal']
     methods_ord = [m for m in _ORDER if m in method_stats]

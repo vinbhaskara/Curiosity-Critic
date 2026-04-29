@@ -43,13 +43,15 @@ METHOD_LABEL = {
     'curiosity_v1':                'Curiosity V1',
     'curiosity_v2':                'Curiosity V2',
     'visitation_count':            'Visitation Count',
+    'rnd_state':                   'RND (State)',
+    'rnd_observation':             'RND (Observation)',
     'curiosity_critic_ours_tabular_critic':       'Ours (Tabular Critic)',
     'curiosity_critic_ours_nnet':  'Ours (Neural Critic Model)',
     'curiosity_critic_ours_ideal': 'Ours Oracle (Ground-Truth Critic)',
 }
 
 METHOD_ORDER = [
-    'random', 'curiosity_v1', 'curiosity_v2',
+    'random', 'curiosity_v1', 'curiosity_v2', 'rnd_state', 'rnd_observation',
     'curiosity_critic_ours_nnet', 'curiosity_critic_ours_ideal',
 ]
 
@@ -58,6 +60,8 @@ METHOD_COLOR = {
     'curiosity_v1':                        '#d62728',
     'curiosity_v2':                        '#ff7f0e',
     'visitation_count':                    '#9467bd',
+    'rnd_state':                           '#8c564b',
+    'rnd_observation':                     '#e377c2',
     'curiosity_critic_ours_tabular_critic': '#6baed6',
     'curiosity_critic_ours_nnet':          '#1f77b4',
     'curiosity_critic_ours_ideal':         '#2ca02c',
@@ -98,7 +102,7 @@ def plot_heatmaps_end(grouped, output_dir, grid_size=30):
     methods = [m for m in METHOD_ORDER if m in grouped]
     n = len(methods)
     ncols = 3
-    nrows = 2
+    nrows = int(np.ceil(n / ncols))
     fig, axes = plt.subplots(nrows, ncols, figsize=(ncols * 3.5, nrows * 4.5))
     axes = np.array(axes).flatten()
 
@@ -290,16 +294,29 @@ def plot_heatmaps_windows(grouped, output_dir, grid_size=30, total_steps=None):
 
 # ── 4. Summary statistics ──────────────────────────────────────────────────────
 
-def print_summary(grouped, total_steps=35000):
+def print_summary(grouped, total_steps=None):
     print('\n' + '='*70)
     print('VISITATION SUMMARY  (seed-averaged)')
     print('='*70)
 
+    if total_steps is None:
+        first_method = next(iter(grouped))
+        total_steps = len(grouped[first_method][0]['trajectory'])
+
+    ts = total_steps
+    early_end = min(5_000, ts)
+    mid_start = max(0, ts // 2 - 2_500)
+    mid_end = min(ts, ts // 2 + 2_500)
+    late_start = max(0, ts - 5_000)
+
+    def _k(x):
+        return f'{x // 1000}k' if x >= 1000 else str(x)
+
     windows = [
-        ('Early  (0–5k)',   slice(0,      5_000)),
-        ('Mid  (15–20k)',   slice(15_000, 20_000)),
-        ('Late (30–35k)',   slice(30_000, 35_000)),
-        ('Full (0–35k)',    slice(0,      35_000)),
+        (f'Early  (0–{_k(early_end)})', slice(0, early_end)),
+        (f'Mid  ({_k(mid_start)}–{_k(mid_end)})', slice(mid_start, mid_end)),
+        (f'Late ({_k(late_start)}–{_k(ts)})', slice(late_start, ts)),
+        (f'Full (0–{_k(ts)})', slice(0, ts)),
     ]
 
     for m in METHOD_ORDER:
@@ -313,8 +330,12 @@ def print_summary(grouped, total_steps=35000):
             fracs = []
             for d in grouped[m]:
                 traj = d['trajectory'][slc]
+                if not traj:
+                    continue
                 n_det = sum(1 for (r, c) in traj if c < det_cols)
                 fracs.append(n_det / len(traj) * 100)
+            if not fracs:
+                continue
             arr = np.array(fracs)
             print(f'  {win_label}: {arr.mean():.1f}% ± {arr.std():.1f}% in det region')
 

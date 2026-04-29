@@ -42,12 +42,19 @@ METHOD_STYLE = {
     'curiosity_v1':                   ('Curiosity V1',                   '#d62728', '-',   10, 1.8),
     'curiosity_v2':                   ('Curiosity V2',                   '#ff7f0e', '-',   20, 1.8),
     'visitation_count':               ('Visitation Count',               '#9467bd', '-',   15, 1.8),
+    'rnd_state':                      ('RND (State)',                    '#8c564b', '-',   18, 1.8),
+    'rnd_observation':                ('RND (Observation)',              '#e377c2', '-',   19, 1.8),
     'curiosity_critic_ours_tabular_critic': ('Ours (Tabular Critic)',    '#6baed6', '-',   30, 1.8),
     'curiosity_critic_ours_nnet':     ('Ours (Neural Critic Model)',     '#1f77b4', '-',   35, 1.8),
     'curiosity_critic_ours_ideal':    ('Ours Oracle (Ground-Truth Critic)', '#2ca02c', ':', 25, 1.8),
 }
 
-METHODS_TO_PLOT = ['random', 'curiosity_v1', 'curiosity_v2', 'visitation_count', 'curiosity_critic_ours_tabular_critic', 'curiosity_critic_ours_nnet', 'curiosity_critic_ours_ideal']
+METHODS_TO_PLOT = [
+    'random', 'curiosity_v1', 'curiosity_v2', 'visitation_count',
+    'rnd_state', 'rnd_observation',
+    'curiosity_critic_ours_tabular_critic', 'curiosity_critic_ours_nnet',
+    'curiosity_critic_ours_ideal',
+]
 
 
 def _fmt(x, _):
@@ -122,7 +129,7 @@ def save_error(grouped, methods, output_dir, log_interval):
     print(f'Saved: {out}')
 
 
-_ZOOM_EXCLUDED = {'curiosity_v1', 'visitation_count'}
+_ZOOM_EXCLUDED = {'curiosity_v1', 'visitation_count', 'rnd_observation'}
 
 
 def save_zoomed_error(grouped, methods, output_dir, log_interval, zoom_steps=10_000):
@@ -146,7 +153,7 @@ def save_zoomed_error(grouped, methods, output_dir, log_interval, zoom_steps=10_
 
     ax.set_xlabel('Environment steps')
     ax.set_ylabel('Mean L2 prediction error (deterministic cells)')
-    ax.set_title('World-Model Quality — Last 10k Steps (excl. Curiosity V1, Visitation Count)', fontweight='bold')
+    ax.set_title('World-Model Quality — Last 10k Steps (excl Curiosity V1, Visitation, RND(Obs))', fontweight='bold')
     ax.xaxis.set_major_formatter(ticker.FuncFormatter(_fmt))
     ax.grid(True, axis='y')
     ax.legend(frameon=True, fancybox=False, edgecolor='#cccccc',
@@ -197,7 +204,7 @@ def save_error_with_zoom(grouped, methods, output_dir, log_interval, zoom_steps=
 
     ax_zoom.set_xlabel('Environment steps')
     ax_zoom.set_ylabel('Mean L2 prediction error (deterministic cells)')
-    ax_zoom.set_title('Last 10k Steps (excl. Curiosity V1, Visitation Count)', fontweight='bold')
+    ax_zoom.set_title('Last 10k Steps (excl Curiosity V1, Visitation, RND(Obs))', fontweight='bold')
     ax_zoom.xaxis.set_major_formatter(ticker.FuncFormatter(_fmt))
     ax_zoom.grid(True, axis='y')
 
