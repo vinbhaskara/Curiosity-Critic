@@ -20,6 +20,9 @@ pip install -r requirements.txt
 chmod +x run.sh && ./run.sh
 ```
 
+`run.sh` runs four scripts in order: `curiosity_experiment.py` (train all 9 methods × 5 seeds, save `.pkl` traces), `plot.py` (error curves), `analyze_visits.py` (heatmaps + visit-fraction plot), `animate.py` (trajectory video + snapshot frames).
+
+
 **Live animation**: [youtu.be/hHSvQGaO5yY](https://youtu.be/hHSvQGaO5yY)
 
 <figure>
