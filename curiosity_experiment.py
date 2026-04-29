@@ -80,6 +80,11 @@ curiosity_v1            Curiosity V1 [Schmidhuber, Feb 1991]: intrinsic reward e
                         L2 prediction error of the world model before the gradient update.
 curiosity_v2            Curiosity V2 [Schmidhuber, Nov 1991]: intrinsic reward equals the reduction in prediction
                         error produced by one gradient update (learning progress signal).
+rnd_state               Random Network Distillation on the factored grid state.  This is a
+                        learned spatial-novelty / soft-count baseline over (row, col).
+rnd_observation         Random Network Distillation on the observed TV-pixel vector.  This
+                        is the citation-faithful RND baseline for the stochastic-observation
+                        setting: stochastic cells keep producing new-looking observations.
 curiosity_critic_ours_tabular_critic   Ours (Tabular Critic): intrinsic reward equals the world-model
                         prediction error minus a per-state EMA-mean tabular baseline
                         (decay=0.9) of residual errors after each gradient step.  As the
@@ -164,7 +169,7 @@ DET_COL_START: int = 0
 
 # Hardcoded seeds and methods for the batch subcommand.
 BATCH_SEEDS:   List[int] = list(range(1,6))
-BATCH_METHODS: List[str] = ['random', 'curiosity_v1', 'curiosity_v2', 'curiosity_critic_ours_tabular_critic', 'curiosity_critic_ours_nnet', 'curiosity_critic_ours_ideal', 'visitation_count']
+BATCH_METHODS: List[str] = ['random', 'curiosity_v1', 'curiosity_v2', 'visitation_count', 'rnd_state', 'rnd_observation', 'curiosity_critic_ours_tabular_critic', 'curiosity_critic_ours_nnet', 'curiosity_critic_ours_ideal']
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -284,6 +289,15 @@ def compute_deterministic_error(
         pred = model.predict((r, c))
         total += float(np.linalg.norm(pred - pattern))
     return total / len(patterns)
+
+
+def encode_state_np(state: Tuple[int, int]) -> np.ndarray:
+    """Factored one-hot(row) | one-hot(col) state encoding as a NumPy vector."""
+    row_enc = np.zeros(GRID_SIZE, dtype=np.float32)
+    col_enc = np.zeros(GRID_SIZE, dtype=np.float32)
+    row_enc[state[0]] = 1.0
+    col_enc[state[1]] = 1.0
+    return np.concatenate([row_enc, col_enc], axis=0)
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -593,6 +607,80 @@ class CriticNNetModel:
 
 
 # ──────────────────────────────────────────────────────────────────────────────
+# Random Network Distillation model
+# ──────────────────────────────────────────────────────────────────────────────
+
+class RNDModel:
+    """
+    Random Network Distillation (Burda et al., 2018).
+
+    A fixed random target network defines a deterministic feature map, and a
+    trainable predictor network learns to match it on inputs the agent has
+    visited.  The intrinsic reward is the predictor's MSE before the predictor
+    trains on the current input, so a first visit receives novelty credit and
+    repeated visits decay as the predictor catches up.
+
+    Two input variants are used in this benchmark:
+      - rnd_state: input is the factored one-hot row/column state (60 dims).
+      - rnd_observation: input is the observed TV-pixel vector (200 dims).
+    """
+
+    def __init__(
+        self,
+        input_dim: int,
+        hidden: int = 128,
+        output_dim: int = 128,
+        lr: float = 0.001,
+        rng: Optional[np.random.Generator] = None,
+    ) -> None:
+        self._input_dim = input_dim
+        self._hidden = hidden
+        self._output_dim = output_dim
+        self._lr = lr
+        rng = rng or np.random.default_rng()
+        self._target_seed = int(rng.integers(0, 2**31))
+        self._predictor_seed = int(rng.integers(0, 2**31))
+        self._build()
+
+    def _build(self) -> None:
+        torch.manual_seed(self._target_seed)
+        self._target = _WorldModelNet(self._input_dim, self._hidden, self._output_dim)
+        self._target.eval()
+        for param in self._target.parameters():
+            param.requires_grad_(False)
+
+        torch.manual_seed(self._predictor_seed)
+        self._predictor = _WorldModelNet(self._input_dim, self._hidden, self._output_dim)
+        self._loss = nn.MSELoss()
+        self._opt = torch.optim.Adam(self._predictor.parameters(), lr=self._lr, betas=(0.9, 0.999), eps=1e-8)
+
+    def _as_tensor(self, x: np.ndarray) -> torch.Tensor:
+        arr = np.asarray(x, dtype=np.float32)
+        if arr.shape != (self._input_dim,):
+            raise ValueError(f"RND input has shape {arr.shape}; expected ({self._input_dim},)")
+        return torch.tensor(arr, dtype=torch.float32).unsqueeze(0)
+
+    def prediction_error(self, x: np.ndarray) -> float:
+        """Return MSE between predictor and fixed target on input x."""
+        self._predictor.eval()
+        with torch.no_grad():
+            xt = self._as_tensor(x)
+            target = self._target(xt)
+            pred = self._predictor(xt)
+            return float(self._loss(pred, target).item())
+
+    def train(self, x: np.ndarray) -> None:
+        """One Adam step distilling the fixed random target on input x."""
+        self._predictor.train()
+        xt = self._as_tensor(x)
+        with torch.no_grad():
+            target = self._target(xt)
+        self._opt.zero_grad()
+        self._loss(self._predictor(xt), target).backward()
+        self._opt.step()
+
+
+# ──────────────────────────────────────────────────────────────────────────────
 # Visitation count table  (Strehl & Littman, 2008)
 # ──────────────────────────────────────────────────────────────────────────────
 
@@ -726,6 +814,8 @@ _REWARD_FN = {
     'random':                        None,
     'curiosity_v1':                  _curiosity_reward_v1,
     'curiosity_v2':                  _curiosity_reward_v2,
+    'rnd_state':                     None,
+    'rnd_observation':               None,
     'curiosity_critic_ours_tabular_critic':         _curiosity_critic_reward_ours,
     'curiosity_critic_ours_nnet':    _curiosity_critic_nnet_reward_ours,
     'curiosity_critic_ours_ideal':   _curiosity_ideal_critic_reward_ours_oracle,
@@ -746,8 +836,11 @@ class ExperimentConfig:
     log_interval:    int   = LOG_INTERVAL
     hidden:          int   = 4       # world-model hidden units
     hidden_critic:   int   = 128     # critic network hidden units (for curiosity_critic_ours_nnet)
+    hidden_rnd:      int   = 128     # RND predictor/target hidden units
+    rnd_output_dim:  int   = 128     # RND random feature dimension
     lr_model:        float = 0.001
     lr_critic:       float = 0.001   # critic network learning rate (for curiosity_critic_ours_nnet)
+    lr_rnd:          float = 0.001   # RND predictor learning rate
     lr_policy:       float = 0.1
     gamma:           float = 0.99
     epsilon:         float = 0.1
@@ -837,6 +930,20 @@ def run_experiment(
             lr     = cfg.lr_critic,
             rng    = np.random.default_rng(VTABLE_COLD_START_SEED + cfg.seed + 1),
         )
+        cold_rnd_state = RNDModel(
+            input_dim  = 2 * GRID_SIZE,
+            hidden     = cfg.hidden_rnd,
+            output_dim = cfg.rnd_output_dim,
+            lr         = cfg.lr_rnd,
+            rng        = np.random.default_rng(VTABLE_COLD_START_SEED + cfg.seed + 2),
+        )
+        cold_rnd_observation = RNDModel(
+            input_dim  = NUM_PIXELS,
+            hidden     = cfg.hidden_rnd,
+            output_dim = cfg.rnd_output_dim,
+            lr         = cfg.lr_rnd,
+            rng        = np.random.default_rng(VTABLE_COLD_START_SEED + cfg.seed + 3),
+        )
         cold_state       = (15, 15)
         cold_rewards: List[float] = []
 
@@ -855,7 +962,16 @@ def run_experiment(
             if cfg.method == 'curiosity_critic_ours_nnet':
                 cold_critic_nnet.train(cold_state, cold_error_after)
             cold_visit_table.increment(cold_state)
-            if reward_fn is not None:
+            if cfg.method == 'rnd_state':
+                rnd_input = encode_state_np(cold_state)
+                raw_r = max(0.0, cold_rnd_state.prediction_error(rnd_input))
+                cold_rnd_state.train(rnd_input)
+                cold_rewards.append(reward_normalizer.normalise(raw_r))
+            elif cfg.method == 'rnd_observation':
+                raw_r = max(0.0, cold_rnd_observation.prediction_error(cold_pixels))
+                cold_rnd_observation.train(cold_pixels)
+                cold_rewards.append(reward_normalizer.normalise(raw_r))
+            elif reward_fn is not None:
                 if cfg.method == 'visitation_count':
                     cold_active_table = cold_visit_table
                 elif cfg.method == 'curiosity_critic_ours_nnet':
@@ -894,6 +1010,20 @@ def run_experiment(
         hidden = cfg.hidden_critic,
         lr     = cfg.lr_critic,
         rng    = np.random.default_rng(cfg.seed + 20_000),
+    )
+    rnd_state_model = RNDModel(
+        input_dim  = 2 * GRID_SIZE,
+        hidden     = cfg.hidden_rnd,
+        output_dim = cfg.rnd_output_dim,
+        lr         = cfg.lr_rnd,
+        rng        = np.random.default_rng(cfg.seed + 30_000),
+    )
+    rnd_observation_model = RNDModel(
+        input_dim  = NUM_PIXELS,
+        hidden     = cfg.hidden_rnd,
+        output_dim = cfg.rnd_output_dim,
+        lr         = cfg.lr_rnd,
+        rng        = np.random.default_rng(cfg.seed + 40_000),
     )
     reward_normalizer = RewardNormalizer()
 
@@ -955,21 +1085,32 @@ def run_experiment(
         visit_table.increment(state)
 
         # ── intrinsic reward ──────────────────────────────────────────────────
-        # Route the correct statistic object to the reward function:
-        #   visitation_count       → visit_table
-        #   curiosity_critic_ours_nnet → critic_nnet
-        #   all others             → var_table
-        if cfg.method == 'visitation_count':
+        # Route each method to the state it needs for reward computation.
+        # RND computes its predictor error before training on the current input.
+        if cfg.method == 'rnd_state':
+            rnd_input = encode_state_np(state)
+            reward = rnd_state_model.prediction_error(rnd_input)
+            rnd_state_model.train(rnd_input)
+        elif cfg.method == 'rnd_observation':
+            reward = rnd_observation_model.prediction_error(pixels)
+            rnd_observation_model.train(pixels)
+        elif cfg.method == 'visitation_count':
             active_table = visit_table
-        elif cfg.method == 'curiosity_critic_ours_nnet':
-            active_table = critic_nnet
+            reward = (
+                0.0 if reward_fn is None
+                else max(0.0, reward_fn(state, error_before, error_after,
+                                        active_table))
+            )
         else:
-            active_table = var_table
-        reward = (
-            0.0 if reward_fn is None
-            else max(0.0, reward_fn(state, error_before, error_after,
-                                    active_table))
-        )
+            if cfg.method == 'curiosity_critic_ours_nnet':
+                active_table = critic_nnet
+            else:
+                active_table = var_table
+            reward = (
+                0.0 if reward_fn is None
+                else max(0.0, reward_fn(state, error_before, error_after,
+                                        active_table))
+            )
 
         # ── action selection and transition ───────────────────────────────────
         # Select action before updating V(state), matching standard TD(0)
@@ -1167,6 +1308,12 @@ def _build_parser() -> argparse.ArgumentParser:
                          help='World-model hidden units (default: 1024).')
     batch_p.add_argument('--lr-model',  type=float, default=0.001,
                          help='Adam learning rate for the world model (default: 0.001).')
+    batch_p.add_argument('--hidden-rnd', type=int, default=128,
+                         help='RND target/predictor hidden units (default: 128).')
+    batch_p.add_argument('--rnd-output-dim', type=int, default=128,
+                         help='RND random feature dimension (default: 128).')
+    batch_p.add_argument('--lr-rnd', type=float, default=0.001,
+                         help='Adam learning rate for the RND predictor (default: 0.001).')
     batch_p.add_argument('--lr-policy', type=float, default=0.05,
                          help='Q-learning step size α (default: 0.05).')
     batch_p.add_argument('--gamma',     type=float, default=0.0,
@@ -1215,6 +1362,11 @@ def _print_config(cfg: ExperimentConfig, label: str = 'config') -> None:
     print(f"    architecture   : Linear({2*GRID_SIZE}→{cfg.hidden})→ReLU→Linear({cfg.hidden}→{NUM_PIXELS})")
     print(f"    loss           : MSELoss (raw logits, no output activation)")
     print(f"    optimiser      : Adam  lr={cfg.lr_model}")
+    print(f"  RND")
+    print(f"    state input    : {2*GRID_SIZE} dims")
+    print(f"    obs input      : {NUM_PIXELS} dims")
+    print(f"    architecture   : Linear(input→{cfg.hidden_rnd})→ReLU→Linear({cfg.hidden_rnd}→{cfg.rnd_output_dim})")
+    print(f"    predictor opt  : Adam  lr={cfg.lr_rnd}")
     print(f"  Policy")
     print(f"    type           : V-table  {GRID_SIZE}×{GRID_SIZE}")
     print(f"    lr (α)         : {cfg.lr_policy}")
@@ -1234,7 +1386,10 @@ def main() -> None:
                 total_steps      = args.total_steps,
                 log_interval     = args.log_interval,
                 hidden           = args.hidden,
+                hidden_rnd       = args.hidden_rnd,
+                rnd_output_dim   = args.rnd_output_dim,
                 lr_model         = args.lr_model,
+                lr_rnd           = args.lr_rnd,
                 lr_policy        = args.lr_policy,
                 gamma            = args.gamma,
                 epsilon          = args.epsilon,
@@ -1256,7 +1411,10 @@ def main() -> None:
             total_steps            = args.total_steps,
             log_interval           = args.log_interval,
             hidden                 = args.hidden,
+            hidden_rnd             = args.hidden_rnd,
+            rnd_output_dim         = args.rnd_output_dim,
             lr_model               = args.lr_model,
+            lr_rnd                 = args.lr_rnd,
             lr_policy              = args.lr_policy,
             gamma                  = args.gamma,
             epsilon                = args.epsilon,

@@ -8,6 +8,8 @@
         Curiosity V1 & 7.287 & 7.054 & 7.093 & 7.256 & 6.882 & $7.114 \pm 0.147$ \\
         Curiosity V2 & 2.546 & 3.128 & 3.204 & 3.422 & 2.393 & $2.939 \pm 0.398$ \\
         Visitation Count & 5.676 & 5.693 & 4.578 & 5.052 & 6.939 & $5.588 \pm 0.794$ \\
+        RND (State) & 2.427 & 2.188 & 2.217 & 2.131 & 2.135 & $2.220 \pm 0.109$ \\
+        RND (Observation) & 6.898 & 6.810 & 6.451 & 7.018 & 7.034 & $6.842 \pm 0.212$ \\
         Ours (Tabular Critic) & 1.921 & 2.025 & 1.827 & 1.938 & 1.851 & $1.912 \pm 0.070$ \\
         Ours (Neural Critic Model) & 1.755 & 1.817 & 1.926 & 1.975 & 1.820 & $1.858 \pm 0.080$ \\
         \textit{Ours Oracle (Ground-Truth Critic)} & \textit{1.624} & \textit{1.733} & \textit{1.816} & \textit{1.753} & \textit{1.757} & \textit{1.736} $\pm$ \textit{0.063} \\
