@@ -3,6 +3,8 @@
 *Vin Bhaskara and Haicheng Wang, University of Toronto, 2026.*  
 \{bhaskara,hcwang\}@cs.toronto.edu    
 
+Accepted to [*ICML 2026 Workshop on Epistemic Intelligence in Machine Learning*](https://sites.google.com/view/eimlicml2026/home?authuser=0).
+
 Paper: [arxiv.org/abs/2604.18701](https://arxiv.org/abs/2604.18701)  
 Blog: [vinbhaskara.github.io/posts/2026/04/curiosity-critic/](https://vinbhaskara.github.io/posts/2026/04/curiosity-critic/)
 
@@ -173,10 +175,8 @@ Cite as:
 @misc{bhaskara2026curiositycriticcumulativepredictionerror,
       title={Curiosity-Critic: Cumulative Prediction Error Improvement as a Tractable Intrinsic Reward for World Model Training}, 
       author={Vin Bhaskara and Haicheng Wang},
+      booktitle={ICML 2026 Workshop: Epistemic Intelligence in Machine Learning},
       year={2026},
-      eprint={2604.18701},
-      archivePrefix={arXiv},
-      primaryClass={cs.LG},
       url={https://arxiv.org/abs/2604.18701}, 
 }
 ```
